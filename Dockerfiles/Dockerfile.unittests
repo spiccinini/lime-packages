@@ -3,7 +3,10 @@ FROM abaez/luarocks:lua5.1
 WORKDIR /root
 
 RUN luarocks install luacov; \
-    luarocks install busted
+    luarocks install busted;
 
 # TODO: move into a development dockerfile
-RUN apk add --no-cache bash bash-completion
+RUN apk add --no-cache linux-headers bash bash-completion git
+
+COPY tools/nixio-0.4-1.rockspec /root/nixio-0.4-1.rockspec
+RUN luarocks build /root/nixio-0.4-1.rockspec
