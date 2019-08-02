@@ -4,6 +4,19 @@ utils = {}
 
 local config = require("lime.config")
 
+function utils.log(...)
+	if DISABLE_LOGGING ~= nil then return end
+	print(...)
+end
+
+function utils.disable_logging()
+	DISABLE_LOGGING = 1
+end
+
+function utils.enable_logging()
+	DISABLE_LOGGING = nil
+end
+
 function utils.split(string, sep)
 	local ret = {}
 	for token in string.gmatch(string, "[^"..sep.."]+") do table.insert(ret, token) end
