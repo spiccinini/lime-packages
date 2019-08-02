@@ -29,10 +29,10 @@ function network.primary_interface()
 	end
 
 	assert( ifname ~= nil and ifname ~= "",
-	        "network.primary_interface() could not determine ifname!" )
+			"network.primary_interface() could not determine ifname!" )
 
 	assert( fs.lstat("/sys/class/net/"..ifname),
-	        "network.primary_interface() "..ifname.." doesn't exists!" )
+			"network.primary_interface() "..ifname.." doesn't exists!" )
 
 	return ifname
 end
@@ -95,7 +95,7 @@ function network.primary_address(offset)
 		ipv4_template = mc:maxhost()
 		ipv4_template:prefix(tonumber(ipv4_maskbits))
 		utils.log("INVALID main_ipv4_address " ..tostring(mc).. " IDENTICAL TO RESERVED "
-                  ..invalid.. " ADDRESS. USING " ..tostring(ipv4_template))
+				  ..invalid.. " ADDRESS. USING " ..tostring(ipv4_template))
 	end
 
 	ipv6_template:prefix(tonumber(ipv6_maskbits))
