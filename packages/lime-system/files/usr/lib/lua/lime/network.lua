@@ -8,7 +8,9 @@ local fs = require("nixio.fs")
 
 local config = require("lime.config")
 local utils = require("lime.utils")
+local JSON = require("luci.jsonc")
 
+network.BOARD_JSON_PATH = "/etc/board.json"
 network.limeIfNamePrefix="lm_net_"
 network.protoParamsSeparator=":"
 network.protoVlanSeparator="_"
@@ -22,9 +24,8 @@ end
 function network.primary_interface()
 	local ifname = config.get("network", "primary_interface", "eth0")
 	if ifname == "auto" then
-		local handle = io.popen("sh /usr/lib/lua/lime/board.sh lan ifname")
-		ifname = handle:read("*a")
-		handle:close()
+		local board = JSON.parse(fs.readfile(network.BOARD_JSON_PATH))
+		ifname = board['network']['lan']['ifname']
 	end
 
 	assert( ifname ~= nil and ifname ~= "",
