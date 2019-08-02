@@ -74,6 +74,7 @@ function utils.applyHostnameTemplate(template)
 end
 
 function utils.get_id(input)
+	assert(input ~= nil, 'get_id must receive a non nil input')
 	if type(input) == "table" then
 		input = table.concat(input, "")
 	end
@@ -93,6 +94,7 @@ end
 
 function utils.network_id()
 	local network_essid = config.get("wifi", "ap_ssid")
+	assert(network_essid, 'config "wifi.ap_ssid" was not found!')
 	return utils.get_id(network_essid)
 end
 

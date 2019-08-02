@@ -55,6 +55,7 @@ end
 function network.primary_address(offset)
 	local offset = offset or 0
 	local pm = network.primary_mac()
+	assert(pm ~= nil, 'no primary MAC')
 	local ipv4_template = config.get("network", "main_ipv4_address")
 	local ipv6_template = config.get("network", "main_ipv6_address")
 
