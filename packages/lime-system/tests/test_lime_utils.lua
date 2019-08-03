@@ -10,4 +10,19 @@ describe('LiMe Utils tests', function()
         -- the result is that all the string is replaced
         assert.is.equal('bar', string.gsub(str, utils.literalize(str), 'bar'))
     end)
+
+    it('test isModuleAvailable', function()
+        assert.is_true(utils.isModuleAvailable('lime.utils'))
+        assert.is_true(utils.isModuleAvailable('lime.firewall'))
+        assert.is_false(utils.isModuleAvailable('foobar'))
+        assert.is_false(utils.isModuleAvailable('lime.foobar'))
+
+        assert.is_false(utils.isModuleAvailable('lime.proto.anygw'))
+
+        assert.is_false(utils.isModuleAvailable('lime.proto.anygw'))
+        test_utils.enable_package('lime-proto-anygw')
+        assert.is_true(utils.isModuleAvailable('lime.proto.anygw'))
+        test_utils.disable_package('lime-proto-anygw', 'lime.proto.anygw')
+        assert.is_false(utils.isModuleAvailable('lime.proto.anygw'))
+    end)
 end)
