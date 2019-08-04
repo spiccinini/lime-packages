@@ -25,4 +25,5 @@ describe('LiMe Utils tests', function()
         test_utils.disable_package('lime-proto-anygw', 'lime.proto.anygw')
         assert.is_false(utils.isModuleAvailable('lime.proto.anygw'))
     end)
+
 end)

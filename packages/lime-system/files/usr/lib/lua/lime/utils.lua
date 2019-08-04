@@ -2,7 +2,10 @@
 
 utils = {}
 
+local libuci = require 'uci'
 local config = require("lime.config")
+
+local uci_cursor = nil
 
 function utils.log(...)
 	if DISABLE_LOGGING ~= nil then return end

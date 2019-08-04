@@ -1,19 +1,33 @@
 local libuci = require 'uci'
 local config = require 'lime.config'
+local fs = require("nixio.fs")
 
 -- disable logging in config module
 config.log = function() end
 
-uci = libuci:cursor()
+local uci = config.get_uci_cursor()
+
 
 describe('LiMe Config tests', function()
+
+    it('test get/set_uci_cursor', function()
+        local cursor = config.get_uci_cursor()
+        assert.are.equal(config.get_uci_cursor(), cursor)
+        config.set_uci_cursor('foo')
+        assert.is.equal('foo', config.get_uci_cursor())
+        --restore cursor
+        config.set_uci_cursor(cursor)
+    end)
+
 
     it('test empty get', function()
         assert.is_nil(config.get('section_foo', 'option_bar'))
     end)
 
     it('test simple get', function()
+        uci:set('lime', 'section_foo', 'type_foo')
         uci:set('lime', 'section_foo', 'option_bar', 'value')
+        uci:commit('lime')
         assert.is.equal('value', config.get('section_foo', 'option_bar'))
     end)
 
@@ -22,47 +36,46 @@ describe('LiMe Config tests', function()
     end)
 
     it('test get with lime-default', function()
-
-        uci:set('lime-defaults', 'section_foo', 'option_bar', 'default_value')
-        assert.is.equal('default_value', config.get('section_foo', 'option_bar'))
+        uci:set('lime-defaults', 'section_foo', 'type_foo')
+        uci:set('lime-defaults', 'section_foo', 'option_bar3', 'default_value')
+        uci:commit('lime-defaults')
+        assert.is.equal('default_value', config.get('section_foo', 'option_bar3'))
     end)
 
     it('test get precedence of fallback and lime-default', function()
         -- lime-default wins over fallback
-        uci:set('lime-defaults', 'section_foo', 'option_bar', 'default_value')
-        assert.is.equal('default_value', config.get('section_foo', 'option_bar', 'fallback'))
-    end)
-
-    it('test get with false value', function()
-        uci:set('lime', 'section_foo', 'option_bar', false)
-        assert.is_false(config.get('section_foo', 'option_bar'))
+        uci:set('lime-defaults', 'section_foo2', 'type_foo')
+        uci:set('lime-defaults', 'section_foo2', 'option_bar', 'default_value')
+        uci:commit('lime-defaults')
+        assert.is.equal('default_value', config.get('section_foo2', 'option_bar', 'fallback'))
     end)
 
     it('test get_bool', function()
-
-        for _, value in pairs({1, 'on', 'true', 'enabled', true}) do
+        for _, value in pairs({'1', 'on', 'true', 'enabled'}) do
+            uci:set('lime', 'foo', 'type')
             uci:set('lime', 'foo', 'bar', value)
+            uci:commit('lime')
             assert.is_true(config.get_bool('foo', 'bar'))
         end
 
-        for _, value in pairs({0, 'off', 'anything', false}) do
+        for _, value in pairs({'0', 'off', 'anything', 'false'}) do
+            uci:set('lime', 'foo', 'type')
             uci:set('lime', 'foo', 'bar', value)
+            uci:commit('lime')
             assert.is_false(config.get_bool('foo', 'bar'))
         end
     end)
 
     it('test set', function()
+        config.set('wlan0', 'type')
         config.set('wlan0', 'htmode', 'HT20')
         assert.is.equal('HT20', config.get('wlan0', 'htmode'))
         assert.is.equal('HT20', uci:get('lime', 'wlan0', 'htmode'))
-
-        config.set('wlan0', 'htmode', nil)
-        assert.is_nil(config.get('wlan0', 'htmode'))
-
     end)
 
     it('test set nonstrings', function()
         -- convert integers to strings
+        config.set('wifi', 'type')
         config.set('wifi', 'foo', 1)
         assert.is.equal('1', config.get('wifi', 'foo'))
 
@@ -79,13 +92,24 @@ describe('LiMe Config tests', function()
     end)
 
     it('test get_all', function()
+        config.set('wifi', 'type')
         config.set('wifi', 'wlan0', '0')
         config.set('wifi', 'wlan1', '1')
         assert.is.equal('0', config.get_all('wifi').wlan0)
         assert.is.equal('1', config.get_all('wifi').wlan1)
     end)
 
-    after_each('reset uci shared store', function()
-        libuci:reset()
+    before_each('', function()
+        uci = libuci:cursor()
+        config.set_uci_cursor(uci)
+        fs.mkdirr('/tmp/test/config')
+        uci:set_confdir('/tmp/test/config')
+        -- TODO: find a best way! why files must exist?
+        local f = io.open('/tmp/test/config/lime', "w"):close()
+        local f = io.open('/tmp/test/config/lime-defaults', "w"):close()
+    end)
+
+    after_each('', function()
+        uci:close()
     end)
 end)
