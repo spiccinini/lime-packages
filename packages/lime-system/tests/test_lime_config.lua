@@ -1,5 +1,6 @@
 local libuci = require 'uci'
 local config = require 'lime.config'
+local test_utils = require 'tests.utils'
 local fs = require("nixio.fs")
 
 -- disable logging in config module
@@ -100,16 +101,10 @@ describe('LiMe Config tests', function()
     end)
 
     before_each('', function()
-        uci = libuci:cursor()
-        config.set_uci_cursor(uci)
-        fs.mkdirr('/tmp/test/config')
-        uci:set_confdir('/tmp/test/config')
-        -- TODO: find a best way! why files must exist?
-        local f = io.open('/tmp/test/config/lime', "w"):close()
-        local f = io.open('/tmp/test/config/lime-defaults', "w"):close()
+        uci = test_utils.setup_test_uci()
     end)
 
     after_each('', function()
-        uci:close()
+        test_utils.teardown_test_uci(uci)
     end)
 end)

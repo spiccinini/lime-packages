@@ -7,7 +7,9 @@ local fs = require("nixio.fs")
 
 utils.disable_logging()
 
-local uci = config.get_uci_cursor()
+local uci = nil
+
+local TEST_BOARD_JSON_PATH = "/tmp/test_board.json"
 
 function create_board_json()
     local board_json = [[{
@@ -22,7 +24,7 @@ function create_board_json()
         }
     }
     }]]
-    local f = io.open("/tmp/board.json", "w")
+    local f = io.open(TEST_BOARD_JSON_PATH, "w")
     f:write(board_json)
     f:close()
 end
@@ -53,14 +55,17 @@ describe('LiMe Network tests', function()
 
     it('test primary_address(offset)', function()
         config.set('network', 'lime')
-        config.set('network', 'primary_interface', 'lo')
+        config.set('network', 'primary_interface', 'eth99')
         config.set('network', 'main_ipv4_address', '10.%N1.0.0/16')
         config.set('network', 'main_ipv6_address', '2a00:1508:0a%N1:%N200::/64')
         config.set('wifi', 'lime')
         config.set('wifi', 'ap_ssid', 'LibreMesh.org')
         uci:commit('lime')
 
+        stub(network, "get_mac", function () return  {'00', '00', '00', '00', '00', '00'} end)
+        test_utils.disable_asserts()
         ipv4, ipv6 = network.primary_address()
+        test_utils.enable_asserts()
         assert.is.equal('10.13.0.0', ipv4:network():string())
         assert.is.equal(16, ipv4:prefix())
         -- as 'lo' interface MAC address is 00:00:00:00:00 then
@@ -72,42 +77,51 @@ describe('LiMe Network tests', function()
         assert.is.equal('2a00:1508:a0d:fe00::', ipv6:network():string())
         assert.is.equal(64, ipv6:prefix())
         assert.is.equal('2a00:1508:a0d:fe00::', ipv6:host():string())
+        network.get_mac:revert()
     end)
 
-    it('test network.configure()', function()
+    it('test network.configure() with only lime.proto.lan', function()
+        local ifname = 'eth99'
+        config.set('system', 'lime')
+        config.set('system', 'domain', 'lan')
         config.set('network', 'lime')
+        config.set('network', 'primary_interface', ifname)
         config.set('network', 'main_ipv4_address', '10.%N1.0.0/16')
         config.set('network', 'main_ipv6_address', '2a00:1508:0a%N1:%N200::/64')
+        config.set('network', 'protocols', {'lan'})
+        config.set('network', 'resolvers', {'4.2.2.2'})
         config.set('wifi', 'lime')
         config.set('wifi', 'ap_ssid', 'LibreMesh.org')
         uci:commit('lime')
-        --network.configure() TODO
+        stub(network, "get_mac", function () return  {'00', '00', '00', '00', '00', '00'} end)
+        stub(network, "scandevices", function () return  {eth99={}} end)
+        test_utils.disable_asserts()
+        network.configure()
+        test_utils.enable_asserts()
+        assert.is.equal("1500", uci:get("network", "lan", "mtu"))
+        assert.is.equal("static", uci:get("network", "lan", "proto"))
+        assert.is.equal(ifname, uci:get("network", "lan", "ifname")[1])
+        network.get_mac:revert()
+        network.scandevices:revert()
     end)
 
     setup('', function()
         create_board_json()
         network.OLD_BOARD_JSON_PATH = network.BOARD_JSON_PATH
-        network.BOARD_JSON_PATH = "/tmp/board.json"
+        network.BOARD_JSON_PATH = TEST_BOARD_JSON_PATH
     end)
 
     teardown('', function()
-        os.remove("/tmp/board.json")
+        os.remove(TEST_BOARD_JSON_PATH)
         network.BOARD_JSON_PATH = network.OLD_BOARD_JSON_PATH
     end)
 
     before_each('', function()
-        uci = libuci:cursor()
-        config.set_uci_cursor(uci)
-        fs.mkdirr('/tmp/test/config')
-        uci:set_confdir('/tmp/test/config')
-        -- TODO: find a best way! why files must exist?
-        local f = io.open('/tmp/test/config/lime', "w"):close()
-        local f = io.open('/tmp/test/config/lime-defaults', "w"):close()
+        uci = test_utils.setup_test_uci()
     end)
 
     after_each('', function()
-        uci:close()
+        test_utils.teardown_test_uci(uci)
     end)
-
 
 end)

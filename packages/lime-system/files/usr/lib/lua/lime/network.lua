@@ -115,15 +115,17 @@ function network.setup_rp_filter()
 	
 	sysctl_options = sysctl_options .. "net.ipv4.conf.default.rp_filter=2\nnet.ipv4.conf.all.rp_filter=2\n";
 	sysctl_file = io.open(sysctl_file_path, "w");
-	sysctl_file:write(sysctl_options);
-	sysctl_file:close();
+	if sysctl_file ~= nil then
+		sysctl_file:write(sysctl_options);
+		sysctl_file:close();
+	end
 end
 
 function network.setup_dns()
 	local cloudDomain = config.get("system", "domain")
 	local resolvers = config.get("network", "resolvers")
 
-	local uci = network.get_uci_cursor()
+	local uci = config.get_uci_cursor()
 	uci:foreach("dhcp", "dnsmasq",
 		function(s)
 			uci:set("dhcp", s[".name"], "domain", cloudDomain)
@@ -142,7 +144,7 @@ end
 function network.clean()
 	print("Clearing network config...")
 
-	local uci = network.get_uci_cursor()
+	local uci = config.get_uci_cursor()
 
 	uci:delete("network", "globals", "ula_prefix")
 	uci:set("network", "wan", "proto", "none")
@@ -221,7 +223,7 @@ function network.scandevices()
 	end
 
 	--! Scrape from uci wireless
-	local uci = network.get_uci_cursor()
+	local uci = config.get_uci_cursor()
 	uci:foreach("wireless", "wifi-iface", owrt_ifname_parser)
 
 	--! Scrape from uci network
@@ -301,7 +303,7 @@ end
 function network.createStaticIface(linuxBaseIfname, openwrtNameSuffix, ipAddr, gwAddr)
 	local openwrtNameSuffix = openwrtNameSuffix or ""
 	local owrtInterfaceName = network.sanitizeIfaceName(linuxBaseIfname) .. openwrtNameSuffix
-	local uci = network.get_uci_cursor()
+	local uci = config.get_uci_cursor()
 
 	uci:set("network", owrtInterfaceName, "interface")
 	uci:set("network", owrtInterfaceName, "proto", "static")
@@ -334,14 +336,14 @@ function network.createVlanIface(linuxBaseIfname, vid, openwrtNameSuffix, vlanPr
 	vlanProtocol = vlanProtocol or "8021ad"
 	openwrtNameSuffix = openwrtNameSuffix or ""
 	vid = tonumber(vid)
-	
+
 	--! sanitize passed linuxBaseIfName for constructing uci section name
 	--! because only alphanumeric and underscores are allowed
 	local owrtInterfaceName = network.sanitizeIfaceName(linuxBaseIfname)
 	local owrtDeviceName = owrtInterfaceName
 	local linux802adIfName = linuxBaseIfname
 
-	local uci = network.get_uci_cursor()
+	local uci = config.get_uci_cursor()
 
 	if vid ~= 0 then
 		local vlanId = tostring(vid)
@@ -403,7 +405,7 @@ function network.createMacvlanIface(baseIfname, linuxName, argsDev, argsIf)
 	owrtDeviceName = owrtDeviceName:gsub("[^%w_]", "_") -- sanitize uci section name
 	owrtInterfaceName = owrtInterfaceName:gsub("[^%w_]", "_") -- sanitize uci section name
 
-	local uci = network.get_uci_cursor()
+	local uci = config.get_uci_cursor()
 
 	uci:set("network", owrtDeviceName, "device")
 	uci:set("network", owrtDeviceName, "type", "macvlan")
