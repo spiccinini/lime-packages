@@ -1,7 +1,14 @@
 #!/bin/bash
 
 TESTS_PATHS='packages/*/tests/test*.lua  tests/test*.lua'
-LIB_PATHS='tests/fakes/?.lua;packages/lime-system/files/usr/lib/lua/?.lua;packages/safe-upgrade/files/usr/sbin/?;;'
+
+LIB_PATHS='tests/fakes/?.lua;packages/safe-upgrade/files/usr/sbin/?'
+# autodiscover more LIB_PATHS
+for pkg in packages/*/files/usr/lib/lua/; do
+  LIB_PATHS="$LIB_PATHS;$pkg?.lua"
+done
+# append default paths
+LIB_PATHS="$LIB_PATHS;;"
 
 # create a temporaty script file to be able to run multiple commands inside docker
 temp_file=$(mktemp /tmp/lime_test.XXXX)
