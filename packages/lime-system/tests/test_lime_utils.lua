@@ -17,9 +17,6 @@ describe('LiMe Utils tests', function()
         assert.is_false(utils.isModuleAvailable('foobar'))
         assert.is_false(utils.isModuleAvailable('lime.foobar'))
 
-        assert.is_false(utils.isModuleAvailable('lime.proto.anygw'))
-
-        assert.is_false(utils.isModuleAvailable('lime.proto.anygw'))
         test_utils.enable_package('lime-proto-anygw')
         assert.is_true(utils.isModuleAvailable('lime.proto.anygw'))
         test_utils.disable_package('lime-proto-anygw', 'lime.proto.anygw')
