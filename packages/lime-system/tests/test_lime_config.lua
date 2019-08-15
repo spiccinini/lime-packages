@@ -6,7 +6,7 @@ local fs = require("nixio.fs")
 -- disable logging in config module
 config.log = function() end
 
-local uci = config.get_uci_cursor()
+local uci = nil
 
 
 describe('LiMe Config tests', function()
