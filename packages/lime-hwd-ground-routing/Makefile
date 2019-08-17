@@ -42,9 +42,8 @@ define Build/Compile
 endef
 
 define Package/$(PKG_NAME)/install
-	@mkdir -p $(1)/usr/lib/lua/lime/hwd || true
-	$(CP) ./build/ground_routing.lua $(1)/usr/lib/lua/lime/hwd/ground_routing.lua
-	@chmod +x $(1)/usr/lib/lua/lime/hwd/ground_routing.lua
+	$(INSTALL_DIR) $(1)/
+	$(CP) ./files/* $(1)/
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))

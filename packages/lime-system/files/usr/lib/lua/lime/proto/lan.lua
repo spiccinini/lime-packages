@@ -1,6 +1,6 @@
 #!/usr/bin/lua
 
-lan = {}
+local lan = {}
 
 local network = require("lime.network")
 local libuci = require("uci")

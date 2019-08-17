@@ -4,10 +4,11 @@ ARG OPENWRT_REPO=https://downloads.openwrt.org/releases/18.06.4/packages/x86_64
 
 WORKDIR /root
 
-RUN luarocks install luacov; \
-    luarocks install busted;
-
 RUN apk add --no-cache bash bash-completion git openssl wget
+
+RUN luarocks install luacov; \
+    luarocks install busted; \
+    luarocks install mobdebug;
 
 COPY tools /root/tools
 RUN /root/tools/dlpkg $OPENWRT_REPO/base/ liblua /root && \

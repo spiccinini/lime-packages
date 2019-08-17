@@ -3,11 +3,10 @@
 local config = require("lime.config")
 local network = require("lime.network")
 local utils = require("lime.utils")
-local libuci = require("uci")
 local fs = require("nixio.fs")
 local iwinfo = require("iwinfo")
 
-wireless = {}
+local wireless = {}
 
 wireless.limeIfNamePrefix="lm_"
 wireless.wifiModeSeparator="-"
@@ -20,14 +19,14 @@ end
 
 function wireless.clean()
 	print("Clearing wireless config...")
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 	uci:foreach("wireless", "wifi-iface", function(s) uci:delete("wireless", s[".name"]) end)
 	uci:save("wireless")
 end
 
 function wireless.scandevices()
 	local devices = {}
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 	uci:foreach("wireless", "wifi-device", function(dev) devices[dev[".name"]] = dev end)
 	return devices
 end
@@ -41,7 +40,7 @@ wireless.availableModes = { adhoc=true, ap=true, apname=true, ieee80211s=true }
 function wireless.isMode(m)
 	return wireless.availableModes[m]
 end
- 
+
 function wireless.createBaseWirelessIface(radio, mode, nameSuffix, extras)
 --! checks("table", "string", "?string", "?table")
 --! checks(...) come from http://lua-users.org/wiki/LuaTypeChecking -> https://github.com/fab13n/checks
@@ -54,7 +53,7 @@ function wireless.createBaseWirelessIface(radio, mode, nameSuffix, extras)
 	local wirelessInterfaceName = wireless.limeIfNamePrefix..ifname:gsub("[^%w_]", "_").."_"..radioName
 	local networkInterfaceName = network.limeIfNamePrefix..ifname:gsub("[^%w_]", "_")
 
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 
 	uci:set("wireless", wirelessInterfaceName, "wifi-iface")
 	uci:set("wireless", wirelessInterfaceName, "mode", mode)
@@ -76,7 +75,6 @@ end
 function wireless.configure()
 	local specificRadios = {}
 	config.foreach("wifi", function(radio) specificRadios[radio[".name"]] = radio end)
-
 	local allRadios = wireless.scandevices()
 	for _,radio in pairs(allRadios) do
 		local radioName = radio[".name"]
@@ -125,7 +123,7 @@ function wireless.configure()
 				channel = specRadio["channel"..freqSuffix] or specRadio["channel"] or "auto"
 			end
 
-			local uci = libuci:cursor()
+			local uci = config.get_uci_cursor()
 			uci:set("wireless", radioName, "disabled", 0)
 			uci:set("wireless", radioName, "distance", distance)
 			uci:set("wireless", radioName, "noscan", 1)
@@ -136,8 +134,8 @@ function wireless.configure()
 
 			for _,modeName in pairs(modes) do
 				local args = {}
-				modeSuffix = utils.split(modeName, "_")[2]	
-				modeName = utils.split(modeName, "_")[1]	
+				modeSuffix = utils.split(modeName, "_")[2]
+				modeName = utils.split(modeName, "_")[1]
 				local mode = require("lime.mode."..modeName)
 
 				for key,value in pairs(options) do

@@ -1,4 +1,9 @@
 #!/bin/bash
+DOCKER_IMAGE="libremesh/luatest:1.0"
+if ! docker inspect --type=image $DOCKER_IMAGE > /dev/null 2>&1; then
+    docker build -f Dockerfiles/Dockerfile.unittests . -t "$DOCKER_IMAGE"
+fi
+export DOCKER_IMAGE
 
 TESTS_PATHS='packages/*/tests/test*.lua  tests/test*.lua'
 

@@ -1,33 +1,28 @@
-local libuci = require 'uci'
 local config = require 'lime.config'
 local network = require 'lime.network'
 local utils = require 'lime.utils'
 local test_utils = require 'tests.utils'
-local fs = require("nixio.fs")
 
 utils.disable_logging()
 
 local uci = nil
 
-local TEST_BOARD_JSON_PATH = "/tmp/test_board.json"
-
-function create_board_json()
-    local board_json = [[{
-    "model": {
-        "id": "test",
-        "name": "test machine"
+local BOARD = {
+    ["model"] = {
+        ["id"] = "test",
+        ["name"] = "test machine",
     },
-    "network": {
-        "lan": {
-            "ifname": "lo",
-            "protocol": "static"
-        }
+    ["network"] = {
+        ["lan"] = {
+            ["ifname"] = "lo",
+            ["protocol"] = "static",
+        },
+        ["wan"] = {
+            ["ifname"] = "eth0",
+            ["protocol"] = "dhcp",
+        },
     }
-    }]]
-    local f = io.open(TEST_BOARD_JSON_PATH, "w")
-    f:write(board_json)
-    f:close()
-end
+}
 
 describe('LiMe Network tests', function()
 
@@ -42,6 +37,8 @@ describe('LiMe Network tests', function()
         config.set('network', 'lime')
         config.set('network', 'primary_interface', 'test0')
         uci:commit('lime')
+        stub(utils, "getBoardAsTable", function () return BOARD end)
+
         assert.is.equal('test0', network.primary_interface())
         test_utils.enable_asserts()
     end)
@@ -65,7 +62,7 @@ describe('LiMe Network tests', function()
 
         stub(network, "get_mac", function () return  {'00', '00', '00', '00', '00', '00'} end)
         test_utils.disable_asserts()
-        ipv4, ipv6 = network.primary_address()
+        local ipv4, ipv6 = network.primary_address()
         test_utils.enable_asserts()
         assert.is.equal('10.13.0.0', ipv4:network():string())
         assert.is.equal(16, ipv4:prefix())
@@ -94,27 +91,20 @@ describe('LiMe Network tests', function()
         config.set('wifi', 'lime')
         config.set('wifi', 'ap_ssid', 'LibreMesh.org')
         uci:commit('lime')
+
         stub(network, "get_mac", function () return  {'00', '00', '00', '00', '00', '00'} end)
         stub(network, "scandevices", function () return  {eth99={}} end)
+        stub(utils, "getBoardAsTable", function () return BOARD end)
+
         test_utils.disable_asserts()
         network.configure()
         test_utils.enable_asserts()
+
         assert.is.equal("1500", uci:get("network", "lan", "mtu"))
         assert.is.equal("static", uci:get("network", "lan", "proto"))
         assert.is.equal(ifname, uci:get("network", "lan", "ifname")[1])
         network.get_mac:revert()
         network.scandevices:revert()
-    end)
-
-    setup('', function()
-        create_board_json()
-        network.OLD_BOARD_JSON_PATH = network.BOARD_JSON_PATH
-        network.BOARD_JSON_PATH = TEST_BOARD_JSON_PATH
-    end)
-
-    teardown('', function()
-        os.remove(TEST_BOARD_JSON_PATH)
-        network.BOARD_JSON_PATH = network.OLD_BOARD_JSON_PATH
     end)
 
     before_each('', function()

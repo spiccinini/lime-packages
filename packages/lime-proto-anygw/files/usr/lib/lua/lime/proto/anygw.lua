@@ -2,9 +2,9 @@
 
 local fs = require("nixio.fs")
 local network = require("lime.network")
-local libuci = require "uci"
+local config = require("lime.config")
 
-anygw = {}
+local anygw = {}
 
 anygw.configured = false
 

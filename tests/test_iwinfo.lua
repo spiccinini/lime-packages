@@ -1,10 +1,6 @@
+local iwinfo = require 'iwinfo'
 
-
-local iwinfo = require('iwinfo')
-local utils = require 'lime.utils'
-local test_utils = require 'tests.utils'
-
-scanlist_result = {
+local scanlist_result = {
 [1] = {
     ["encryption"] = {
         ["enabled"] = true,
@@ -28,7 +24,7 @@ scanlist_result = {
     ["encryption"] = {
         ["enabled"] = false,
         ["auth_algs"] = { } ,
-        ["description"] = None,
+        ["description"] = "None",
         ["wep"] = false,
         ["auth_suites"] = { } ,
         ["wpa"] = 0,
@@ -52,12 +48,12 @@ describe('iwinfo fake tests', function()
         local scanlist = iwinfo.nl80211.scanlist('phy0')
         assert.are.equal(scanlist, scanlist_result)
 
-        station = iwinfo.fake.scanlist_gen_station('LibreMesh.org', 7, -47,
-                                                   "aa:bb:cc:dd:ee:ff", "Ad-Hoc", 37)
+        local station = iwinfo.fake.scanlist_gen_station('LibreMesh.org', 7, -47,
+														 "aa:bb:cc:dd:ee:ff", "Ad-Hoc", 37)
 
         assert.is.equal('Ad-Hoc', station['mode'])
         iwinfo.fake.set_scanlist('phy1', {station})
-        local scanlist = iwinfo.nl80211.scanlist('phy1')
+        scanlist = iwinfo.nl80211.scanlist('phy1')
         assert.are.same({station}, scanlist)
     end)
 
@@ -93,8 +89,8 @@ describe('iwinfo fake tests', function()
     end)
 
     it('test hwmodelist(radio_or_phy)', function()
-        hwmodelist_n_2ghz = { ["a"] = false, ["b"] = true, ["ac"] = false, ["g"] = true, ["n"] = true,}
-        hwmodelist_n_5ghz = { ["a"] = true, ["b"] = false, ["ac"] = false, ["g"] = false, ["n"] = true,}
+        local hwmodelist_n_2ghz = { ["a"] = false, ["b"] = true, ["ac"] = false, ["g"] = true, ["n"] = true,}
+        local hwmodelist_n_5ghz = { ["a"] = true, ["b"] = false, ["ac"] = false, ["g"] = false, ["n"] = true,}
 
         assert.are.same(hwmodelist_n_2ghz, iwinfo.fake.HWMODE.HW_2GHZ_N)
         assert.are.same(hwmodelist_n_5ghz, iwinfo.fake.HWMODE.HW_5GHZ_N)

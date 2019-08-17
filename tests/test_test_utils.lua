@@ -1,4 +1,3 @@
-local utils = require "lime.utils"
 local test_utils = require "tests.utils"
 
 describe("Test utils tests", function()
@@ -16,7 +15,7 @@ describe("Test utils tests", function()
 
     it("test enable package", function()
         test_utils.enable_package('foobar')
-        path = 'packages/foobar/files/usr/lib/lua/?.lua;'
+        local path = 'packages/foobar/files/usr/lib/lua/?.lua;'
         assert.are.equal(path, string.sub(package.path, 1, string.len(path)))
 
         test_utils.disable_package('foobar', 'foobar')

@@ -1,16 +1,13 @@
 #!/usr/bin/lua
 
-network = {}
+local network = {}
 
 local ip = require("luci.ip")
-local libuci = require("uci")
 local fs = require("nixio.fs")
 
 local config = require("lime.config")
 local utils = require("lime.utils")
-local JSON = require("luci.jsonc")
 
-network.BOARD_JSON_PATH = "/etc/board.json"
 network.limeIfNamePrefix="lm_net_"
 network.protoParamsSeparator=":"
 network.protoVlanSeparator="_"
@@ -24,7 +21,7 @@ end
 function network.primary_interface()
 	local ifname = config.get("network", "primary_interface", "eth0")
 	if ifname == "auto" then
-		local board = JSON.parse(fs.readfile(network.BOARD_JSON_PATH))
+		local board = utils.getBoardAsTable()
 		ifname = board['network']['lan']['ifname']
 	end
 
@@ -109,10 +106,10 @@ function network.setup_rp_filter()
 	local sysctl_file = io.open(sysctl_file_path, "r");
 	while sysctl_file:read(0) do
 		local sysctl_line = sysctl_file:read();
-		if not string.find(sysctl_line, ".rp_filter") then sysctl_options = sysctl_options .. sysctl_line .. "\n" end 
+		if not string.find(sysctl_line, ".rp_filter") then sysctl_options = sysctl_options .. sysctl_line .. "\n" end
 	end
 	sysctl_file:close()
-	
+
 	sysctl_options = sysctl_options .. "net.ipv4.conf.default.rp_filter=2\nnet.ipv4.conf.all.rp_filter=2\n";
 	sysctl_file = io.open(sysctl_file_path, "w");
 	if sysctl_file ~= nil then
@@ -207,6 +204,7 @@ function network.scandevices()
 	end
 
 	function owrt_ifname_parser(section)
+
 		local ifn = section["ifname"]
 		if ( type(ifn) == "string" ) then dev_parser(ifn) end
 		if ( type(ifn) == "table" ) then for _,v in pairs(ifn) do dev_parser(v) end end
@@ -224,7 +222,6 @@ function network.scandevices()
 
 	--! Scrape from uci wireless
 	local uci = config.get_uci_cursor()
-	uci:foreach("wireless", "wifi-iface", owrt_ifname_parser)
 
 	--! Scrape from uci network
 	uci:foreach("network", "interface", owrt_ifname_parser)
@@ -359,7 +356,7 @@ function network.createVlanIface(linuxBaseIfname, vid, openwrtNameSuffix, vlanPr
 		--! Do not use . as separator as this will make netifd create an 802.1q interface anyway
 		--! and sanitize linuxBaseIfName because it can contain dots as well (i.e. switch ports)
 		linux802adIfName = linux802adIfName:gsub("[^%w-]", "-")..network.protoVlanSeparator..vlanId
-		
+
 		uci:set("network", owrtDeviceName, "device")
 		uci:set("network", owrtDeviceName, "type", vlanProtocol)
 		uci:set("network", owrtDeviceName, "name", linux802adIfName)
