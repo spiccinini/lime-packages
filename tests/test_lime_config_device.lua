@@ -43,20 +43,12 @@ describe('LiMe Config tests', function()
         local iwinfo = require 'iwinfo'
 		iwinfo.fake.load_from_uci(uci)
 
-        assert.is.equal('auto', uci:get('network', 'globals', 'ula_prefix'))
 
-        -- Here is the generation of the base openwrt config:
-        --    openwrt/package/base-files/files/bin/config_generate
-
-
-        --stub(network, "get_mac", function () return  {'00', '00', '00', '00', '00', '00'} end)
-        test_utils.disable_asserts()
 
         stub(utils, "getBoardAsTable", function () return librerouter_board end)
         table.insert(hw_detection.search_paths, 'packages/*hwd*/files/usr/lib/lua/lime/hwd/*.lua')
 
         config.main()
-        test_utils.enable_asserts()
 
         assert.is.equal('eth0.1', config.get('lm_hwd_openwrt_wan', 'linux_name'))
         assert.is.equal('eth0', uci:get('network', 'lm_net_eth0_babeld_dev', 'ifname'))
