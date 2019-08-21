@@ -1,5 +1,7 @@
 #!/usr/bin/lua
 
+local config = require("lime.config")
+local network = require('lime.network')
 local ieee80211s_mode = require("lime.mode.ieee80211s")
 
 local ieee80211s = {}
@@ -12,8 +14,6 @@ end
 
 function ieee80211s.setup_interface(ifname, args)
 	if ifname:match("^wlan%d+."..ieee80211s_mode.wifi_mode) then
-		local config = require "lime.config"
-		local network = require 'lime.network'
 		local uci = config.get_uci_cursor()
 
 		--! sanitize passed ifname for constructing uci section name

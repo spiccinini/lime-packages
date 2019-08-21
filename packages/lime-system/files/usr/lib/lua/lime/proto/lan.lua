@@ -3,7 +3,6 @@
 local lan = {}
 
 local network = require("lime.network")
-local libuci = require("uci")
 local config = require("lime.config")
 local utils = require("lime.utils")
 

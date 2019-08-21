@@ -1,5 +1,7 @@
 #!/usr/bin/lua
 
+local config = require("lime.config")
+local network = require("lime.network")
 local adhoc_mode = require("lime.mode.adhoc")
 
 local adhoc = {}
@@ -12,7 +14,7 @@ end
 
 function adhoc.setup_interface(ifname, args)
 	if ifname:match("^wlan%d+."..adhoc_mode.wifi_mode) then
-		local config = require "lime.config"
+
 		local uci = config.get_uci_cursor()
 
 		--! sanitize passed ifname for constructing uci section name

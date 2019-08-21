@@ -1,5 +1,7 @@
 #!/usr/bin/lua
 
+local config = require("lime.config")
+local network = require("lime.network")
 local client_mode = require("lime.mode.client")
 
 local client = {}
@@ -12,7 +14,6 @@ end
 
 function client.setup_interface(ifname, args)
 	if ifname:match("^wlan%d+."..client_mode.wifi_mode) then
-		local config = require "lime.config"
 		local uci = config.get_uci_cursor()
 
 		--! sanitize passed ifname for constructing uci section name
