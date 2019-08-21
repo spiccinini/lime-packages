@@ -47,19 +47,19 @@ jobs:
               "./scripts/feeds update -a && ./scripts/feeds install -p libremesh -a && cp /home/build/openwrt/config /home/build/openwrt/.config && make defconfig && make -j2"
 
       deploy:
-      - provider: script
+        - provider: script
           script:
           - rsync --delete-after -L -r -v -e "sshpass -p $SSH_PASS ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $CI_PORT"
               "/output/" "${CI_USER}@${CI_SERVER}:${CI_STORE_PATH}/$STORE_PATH/packages/"
           on:
-          branch: master
-      - provider: script
+            branch: master
+        - provider: script
           script:
           - rsync --rsync-path="mkdir -p ${CI_STORE_PATH}/$STORE_PATH/branches/$TRAVIS_BRANCH/ && rsync"
               --delete-after -L -r -v
               -e "sshpass -p $SSH_PASS ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $CI_PORT"
               "/output/" "${CI_USER}@${CI_SERVER}:${CI_STORE_PATH}/$STORE_PATH/branches/$TRAVIS_BRANCH/"
           on:
-          all_branches: true
-          condition: $TRAVIS_BRANCH != master
+            all_branches: true
+            condition: $TRAVIS_BRANCH != master
 
