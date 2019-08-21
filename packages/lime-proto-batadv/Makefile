@@ -26,9 +26,6 @@ define Package/$(PKG_NAME)
 endef
 
 define Build/Compile
-	@rm -rf ./build || true
-	@cp -r ./src ./build
-	@sed -i '/^--!.*/d' build/*.lua
 endef
 
 define Package/$(PKG_NAME)/install
