@@ -1,4 +1,7 @@
 local iwinfo = require 'iwinfo'
+local test_utils = require 'tests.utils'
+
+local uci
 
 local scanlist_result = {
 [1] = {
@@ -49,7 +52,7 @@ describe('iwinfo fake tests', function()
         assert.are.equal(scanlist, scanlist_result)
 
         local station = iwinfo.fake.scanlist_gen_station('LibreMesh.org', 7, -47,
-														 "aa:bb:cc:dd:ee:ff", "Ad-Hoc", 37)
+                                                        "aa:bb:cc:dd:ee:ff", "Ad-Hoc", 37)
 
         assert.is.equal('Ad-Hoc', station['mode'])
         iwinfo.fake.set_scanlist('phy1', {station})
@@ -106,5 +109,36 @@ describe('iwinfo fake tests', function()
 
         assert.are.same(hwmodelist_n_5ghz, iwinfo.nl80211.hwmodelist('phy1'))
         assert.are.same(hwmodelist_n_5ghz, iwinfo.nl80211.hwmodelist('wlan1-apname'))
+    end)
+
+    it('test load_from_uci', function()
+        uci:set('wireless', 'radio0', 'wifi-device')
+        uci:set('wireless', 'radio0', 'type', 'mac80211')
+        uci:set('wireless', 'radio0', 'channel', '4')
+        uci:set('wireless', 'radio0', 'hwmode', '11a')
+        uci:set('wireless', 'radio0', 'macaddr', '01:23:45:67:89:AB')
+        uci:set('wireless', 'radio0', 'htmpde', 'HT40')
+        uci:set('wireless', 'radio0', 'disabled', '0')
+
+        uci:set('wireless', 'wlan0', 'wifi-iface')
+        uci:set('wireless', 'wlan0', 'device', 'radio0')
+        uci:set('wireless', 'wlan0', 'network', 'lan')
+        uci:set('wireless', 'wlan0', 'mode', 'ap')
+        uci:set('wireless', 'wlan0', 'ssid', 'OpenWrt')
+        uci:set('wireless', 'wlan0', 'encryption', 'none')
+
+        uci:commit('wireless')
+        iwinfo.fake.load_from_uci(uci)
+        assert.are.same(iwinfo.fake.HWMODE.HW_5GHZ_N,
+                        iwinfo.nl80211.hwmodelist('radio0'))
+        assert.are.same('4', iwinfo.nl80211.channel('radio0'))
+    end)
+
+    before_each('', function()
+        uci = test_utils.setup_test_uci()
+    end)
+
+    after_each('', function()
+        test_utils.teardown_test_uci(uci)
     end)
 end)

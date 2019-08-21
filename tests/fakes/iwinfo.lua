@@ -129,6 +129,21 @@ function iwinfo.nl80211.hwmodelist(radio_or_phy)
     return iwinfo.fake._hwmodelists[radio_or_phy]
 end
 
+function iwinfo.fake.load_from_uci(uci_cursor)
+    function create_device(dev)
+        local hwmode
+        if dev.hwmode == '11a' then
+            hwmode = iwinfo.fake.HWMODE.HW_5GHZ_N
+        elseif dev.hwmode == '11g' then
+            hwmode = iwinfo.fake.HWMODE.HW_2GHZ_N
+        else
+            assert(0, 'posibility not supported yet, please add support!')
+        end
+        iwinfo.fake.set_hwmodelist(dev[".name"], hwmode)
+        iwinfo.fake.set_channel(dev[".name"], dev.channel)
+    end
+    uci_cursor:foreach("wireless", "wifi-device", function(dev) create_device(dev) end)
+end
 
 return iwinfo
 
