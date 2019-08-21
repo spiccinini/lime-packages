@@ -14,8 +14,9 @@ local utils = require('firstbootwizard.utils')
 local iwinfo = require("iwinfo")
 local wireless = require("lime.wireless")
 local fs = require("nixio.fs")
-local configs = require("lime.config")
+local config = require("lime.config")
 local nixio = require "nixio"
+local uci = require "uci"
 
 local fbw = {}
 
@@ -37,7 +38,7 @@ end
 
 -- Remove old results
 function fbw.clean_tmp()
-    utils.execute('rm /tmp/lime-defaults__*')
+    utils.execute('rm -f /tmp/lime-defaults__*')
 end
 
 -- Save working copy of wireless
@@ -80,11 +81,10 @@ end
 
 -- Calc link local address and download lime-default
 function fbw.get_config(results, mesh_network)
-    fbw.log('Calc link local address and download lime-default - '.. json.encode(mesh_network))
+    fbw.log('Calc link local address and download lime-default - '.. json.stringify(mesh_network))
     local mode = mesh_network.mode == "Mesh Point" and 'mesh' or 'adhoc'
     local dev_id = 'wlan'..mesh_network['phy_idx']..'-'..mode
     local stations = {}
-    local linksLocalIpv6 = {}
     -- Setup wireless interface
     fbw.setup_wireless(mesh_network)
     -- Check if connected if not sleep some more until connected or ignore if 10s passed
@@ -103,7 +103,7 @@ function fbw.get_config(results, mesh_network)
     end, hosts)
     data = utils.filter_alredy_scanned(data, results)
     -- Try to fetch remote config file
-    configs = ft.map(fetch_config, data)
+    local configs = ft.map(fbw.fetch_config, data)
     -- Return only valid configs
     for _, config in pairs(configs) do
         results[config.host] = config
@@ -150,7 +150,7 @@ end
 
 -- Fetch remote configuration and save result
 function fbw.fetch_config(data)
-    fbw.log('Fetch config from '.. json.encode(data))
+    fbw.log('Fetch config from '.. json.stringify(data))
     local host = data.host
     local hostname = utils.execute("/bin/wget http://["..data.host.."]/cgi-bin/hostname -qO - "):gsub("\n", "")
     fbw.log('Hostname found: '.. hostname)
@@ -198,18 +198,18 @@ function fbw.apply_file_config(file, hostname)
     -- Format hostname
     hostname = hostname or uci_cursor:get("lime", "system", "hostname")
     -- Clean previus lime configuration and replace lime-defaults
-    clean_lime_config()
-    utils.execute("cp "..filePath.." /etc/config/lime-defaults")    
+    fbw.clean_lime_config()
+    utils.execute("cp "..filePath.." /etc/config/lime-defaults")
     -- Run lime-config as first boot and  setup new hostname
     utils.execute("/rom/etc/uci-defaults/91_lime-config")
     uci_cursor:set("lime", "system","hostname", hostname)
     uci_cursor:commit("lime")
     -- Remove FBW lock file
-    remove_lock_file()
+    fbw.remove_lock_file()
     -- Apply new configuration
     os.execute("/usr/bin/lime-config")
     -- Start sharing lime-defaults and reboot
-    share_defualts()
+    fbw.share_defualts()
     os.execute("reboot")
 end
 
@@ -283,15 +283,15 @@ function fbw.apply_user_configs(configs, hostname)
     uci_cursor:set("lime-defaults", 'wifi', 'ieee80211s_mesh_id', 'LiMe')
     uci_cursor:commit("lime-defaults")
     -- Apply new configuration and setup hostname
-    clean_lime_config()
+    fbw.clean_lime_config()
     utils.execute("/rom/etc/uci-defaults/91_lime-config")
     uci_cursor:set("lime", 'system', 'hostname', hostname)
     uci_cursor:commit('lime')
     -- Apply new configuration
     os.execute("/usr/bin/lime-config")
     -- Start sharing lime-defaults and reboot
-    share_defualts()
-    remove_lock_file()
+    fbw.share_defualts()
+    fbw.remove_lock_file()
     os.execute("reboot")
 end
 
@@ -309,7 +309,7 @@ function fbw.get_all_networks()
     fbw.log('Get mesh networks')
     networks = fbw.get_networks()
     fbw.log('Get configs files')
-    configs = ft.reduce(get_config, networks, {})
+    configs = ft.reduce(fbw.get_config, networks, {})
     fbw.log('Restore previus wireless configuration')
     fbw.restore_wifi_config()
     fbw.log('Remove lock file')

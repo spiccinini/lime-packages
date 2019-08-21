@@ -3,6 +3,7 @@
 local fs = require("nixio.fs")
 local network = require("lime.network")
 local config = require("lime.config")
+local utils = require("lime.utils")
 
 local anygw = {}
 
@@ -31,7 +32,7 @@ function anygw.configure(args)
 	local owrtInterfaceName, _, _ = network.createMacvlanIface( baseIfname,
 		"anygw", argsDev, argsIf )
 
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 	local pfr = network.limeIfNamePrefix.."anygw_"
 
 	uci:set("network", pfr.."rule6", "rule6")
