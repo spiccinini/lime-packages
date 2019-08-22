@@ -41,6 +41,11 @@ define Package/$(PKG_NAME)/conffiles
 endef
 
 define Build/Compile
+	@rm -rf ./build || true
+	@mkdir ./build
+	$(CP) ./files ./build
+	$(FIND) ./build -name '*.sh' -exec sed -i '/^\s*#\[Doc\]/d' {} +
+	$(FIND) ./build -name '*.lua' -exec sed -i '/^\s*--!.*/d' {} +
 endef
 
 LIME_VERSION_SED:=$(SED)   's,%LIME_ID%,$(LIME_ID),g' \
@@ -53,7 +58,7 @@ LIME_VERSION_SED:=$(SED)   's,%LIME_ID%,$(LIME_ID),g' \
 
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/
-	$(CP) ./files/* $(1)/
+	$(CP) ./build/files/* $(1)/
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/lime-config/
 	$(LIME_VERSION_SED) \
 		$(1)/etc/lime_release \
