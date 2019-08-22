@@ -61,9 +61,17 @@ end
 function utils.teardown_test_uci(uci)
 	local confdir = uci:get_confdir()
 	if(string.find(confdir, '^/tmp') ~= nil) then
+		local out = io.popen("rm -rf " .. confdir .. " " .. uci:get_savedir())
+		out:read('*all') -- this allows waiting for popen completion
+		out:close()
 		io.popen("rm -rf " .. confdir .. " " .. uci:get_savedir())
 	end
 	uci:close()
+end
+
+function utils.get_board(name)
+	local board_path = 'tests/devices/' .. name .. '/board.json'
+	return limeutils.getBoardAsTable(board_path)
 end
 
 

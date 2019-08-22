@@ -40,7 +40,7 @@ wireless.availableModes = { adhoc=true, ap=true, apname=true, ieee80211s=true }
 function wireless.isMode(m)
 	return wireless.availableModes[m]
 end
-
+ 
 function wireless.createBaseWirelessIface(radio, mode, nameSuffix, extras)
 --! checks("table", "string", "?string", "?table")
 --! checks(...) come from http://lua-users.org/wiki/LuaTypeChecking -> https://github.com/fab13n/checks
@@ -75,6 +75,7 @@ end
 function wireless.configure()
 	local specificRadios = {}
 	config.foreach("wifi", function(radio) specificRadios[radio[".name"]] = radio end)
+
 	local allRadios = wireless.scandevices()
 	for _,radio in pairs(allRadios) do
 		local radioName = radio[".name"]

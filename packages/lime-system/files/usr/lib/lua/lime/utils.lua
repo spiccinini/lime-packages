@@ -2,9 +2,9 @@
 
 local utils = {}
 
-local config = require 'lime.config'
-local json = require 'luci.jsonc'
-local fs = require "nixio.fs"
+local config = require("lime.config")
+local json = require("luci.jsonc")
+local fs = require("nixio.fs")
 
 utils.BOARD_JSON_PATH = "/etc/board.json"
 
@@ -43,8 +43,8 @@ function utils.printf(fmt, ...)
 	print(string.format(fmt, ...))
 end
 
--- escape the magic characters: ( ) . % + - * ? [ ] ^ $
--- useful to use with gsub / match when finding exactly a string
+--! escape the magic characters: ( ) . % + - * ? [ ] ^ $
+--! useful to use with gsub / match when finding exactly a string
 function utils.literalize(str)
     return str:gsub("[%(%)%.%%%+%-%*%?%[%]%^%$]", function(c) return "%" .. c end)
 end
@@ -216,8 +216,11 @@ function utils.tableMelt(t1, t2)
 	return t1
 end
 
-function utils.getBoardAsTable()
-	return json.parse(fs.readfile(utils.BOARD_JSON_PATH))
+function utils.getBoardAsTable(board_path)
+	if board_path == nil then
+		board_path = utils.BOARD_JSON_PATH
+	end
+	return json.parse(fs.readfile(board_path))
 end
 
 return utils

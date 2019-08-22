@@ -1,8 +1,5 @@
 local config = require 'lime.config'
-local utils = require 'lime.utils'
-local hw_detection = require 'lime.hardware_detection'
 local test_utils = require 'tests.utils'
-local librerouter_board = require 'tests.devices.librerouter-v1.board'
 
 -- disable logging in config module
 config.log = function() end

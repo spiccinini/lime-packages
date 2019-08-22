@@ -4,8 +4,7 @@ local utils = require 'lime.utils'
 local test_utils = require 'tests.utils'
 
 utils.disable_logging()
-
-local uci = nil
+local uci
 
 local BOARD = {
     ["model"] = {

@@ -13,7 +13,7 @@ describe('LiMe Wireless tests', function()
         assert.is_true(wireless.is5Ghz('phy0'))
         iwinfo.fake.set_hwmodelist('phy0', { ["a"] = false, ["b"] = false, ["ac"] = true, ["g"] = false, ["n"] = true,})
         assert.is_true(wireless.is5Ghz('phy0'))
-        
+
         iwinfo.fake.set_hwmodelist('phy0', { ["a"] = false, ["b"] = true, ["ac"] = false, ["g"] = false, ["n"] = true,})
         assert.is_false(wireless.is5Ghz('phy0'))
         iwinfo.fake.set_hwmodelist('phy0', { ["a"] = false, ["b"] = true, ["ac"] = false, ["g"] = true, ["n"] = false,})

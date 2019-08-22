@@ -109,7 +109,6 @@ function network.setup_rp_filter()
 		if not string.find(sysctl_line, ".rp_filter") then sysctl_options = sysctl_options .. sysctl_line .. "\n" end
 	end
 	sysctl_file:close()
-
 	sysctl_options = sysctl_options .. "net.ipv4.conf.default.rp_filter=2\nnet.ipv4.conf.all.rp_filter=2\n";
 	sysctl_file = io.open(sysctl_file_path, "w");
 	if sysctl_file ~= nil then
@@ -204,7 +203,6 @@ function network.scandevices()
 	end
 
 	function owrt_ifname_parser(section)
-
 		local ifn = section["ifname"]
 		if ( type(ifn) == "string" ) then dev_parser(ifn) end
 		if ( type(ifn) == "table" ) then for _,v in pairs(ifn) do dev_parser(v) end end
@@ -222,6 +220,7 @@ function network.scandevices()
 
 	--! Scrape from uci wireless
 	local uci = config.get_uci_cursor()
+	uci:foreach("wireless", "wifi-iface", owrt_ifname_parser)
 
 	--! Scrape from uci network
 	uci:foreach("network", "interface", owrt_ifname_parser)
@@ -333,7 +332,7 @@ function network.createVlanIface(linuxBaseIfname, vid, openwrtNameSuffix, vlanPr
 	vlanProtocol = vlanProtocol or "8021ad"
 	openwrtNameSuffix = openwrtNameSuffix or ""
 	vid = tonumber(vid)
-
+	
 	--! sanitize passed linuxBaseIfName for constructing uci section name
 	--! because only alphanumeric and underscores are allowed
 	local owrtInterfaceName = network.sanitizeIfaceName(linuxBaseIfname)
@@ -356,7 +355,7 @@ function network.createVlanIface(linuxBaseIfname, vid, openwrtNameSuffix, vlanPr
 		--! Do not use . as separator as this will make netifd create an 802.1q interface anyway
 		--! and sanitize linuxBaseIfName because it can contain dots as well (i.e. switch ports)
 		linux802adIfName = linux802adIfName:gsub("[^%w-]", "-")..network.protoVlanSeparator..vlanId
-
+		
 		uci:set("network", owrtDeviceName, "device")
 		uci:set("network", owrtDeviceName, "type", vlanProtocol)
 		uci:set("network", owrtDeviceName, "name", linux802adIfName)

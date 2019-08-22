@@ -85,6 +85,7 @@ function fbw.get_config(results, mesh_network)
     local mode = mesh_network.mode == "Mesh Point" and 'mesh' or 'adhoc'
     local dev_id = 'wlan'..mesh_network['phy_idx']..'-'..mode
     local stations = {}
+    local linksLocalIpv6 = {}
     -- Setup wireless interface
     fbw.setup_wireless(mesh_network)
     -- Check if connected if not sleep some more until connected or ignore if 10s passed

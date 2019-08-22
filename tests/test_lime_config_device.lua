@@ -2,12 +2,14 @@ local config = require 'lime.config'
 local utils = require 'lime.utils'
 local hw_detection = require 'lime.hardware_detection'
 local test_utils = require 'tests.utils'
-local librerouter_board = require 'tests.devices.librerouter-v1.board'
+
 
 -- disable logging in config module
 config.log = function() end
 
 local uci
+
+local librerouter_board = test_utils.get_board('librerouter-v1')
 
 describe('LiMe Config tests', function()
     it('test lime-config LibreRouter', function()

@@ -11,6 +11,7 @@ lan.configured = false
 function lan.configure(args)
 	if lan.configured then return end
 	lan.configured = true
+
 	local ipv4, ipv6 = network.primary_address()
 	local uci = config.get_uci_cursor()
 	uci:set("network", "lan", "interface")
