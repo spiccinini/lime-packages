@@ -1,10 +1,7 @@
 #!/usr/bin/lua
+local network = require 'lime.network'
 
-local libuci = require("uci")
-local fs = require("nixio.fs")
-local config = require("lime.config")
-
-static = {}
+local static = {}
 
 static.configured = false
 

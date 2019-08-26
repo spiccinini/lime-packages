@@ -1,9 +1,8 @@
 #!/usr/bin/lua
 
-network = {}
+local network = {}
 
 local ip = require("luci.ip")
-local libuci = require("uci")
 local fs = require("nixio.fs")
 
 local config = require("lime.config")
@@ -22,16 +21,15 @@ end
 function network.primary_interface()
 	local ifname = config.get("network", "primary_interface", "eth0")
 	if ifname == "auto" then
-		local handle = io.popen("sh /usr/lib/lua/lime/board.sh lan ifname")
-		ifname = handle:read("*a")
-		handle:close()
+		local board = utils.getBoardAsTable()
+		ifname = board['network']['lan']['ifname']
 	end
 
 	assert( ifname ~= nil and ifname ~= "",
-	        "network.primary_interface() could not determine ifname!" )
+			"network.primary_interface() could not determine ifname!" )
 
 	assert( fs.lstat("/sys/class/net/"..ifname),
-	        "network.primary_interface() "..ifname.." doesn't exists!" )
+			"network.primary_interface() "..ifname.." doesn't exists!" )
 
 	return ifname
 end
@@ -54,6 +52,7 @@ end
 function network.primary_address(offset)
 	local offset = offset or 0
 	local pm = network.primary_mac()
+	assert(pm ~= nil, 'no primary MAC')
 	local ipv4_template = config.get("network", "main_ipv4_address")
 	local ipv6_template = config.get("network", "main_ipv6_address")
 
@@ -92,8 +91,8 @@ function network.primary_address(offset)
 	if invalid then
 		ipv4_template = mc:maxhost()
 		ipv4_template:prefix(tonumber(ipv4_maskbits))
-		print("INVALID main_ipv4_address " ..tostring(mc).. " IDENTICAL TO RESERVED "
-			..invalid.. " ADDRESS. USING " ..tostring(ipv4_template))
+		utils.log("INVALID main_ipv4_address " ..tostring(mc).. " IDENTICAL TO RESERVED "
+				  ..invalid.. " ADDRESS. USING " ..tostring(ipv4_template))
 	end
 
 	ipv6_template:prefix(tonumber(ipv6_maskbits))
@@ -107,21 +106,22 @@ function network.setup_rp_filter()
 	local sysctl_file = io.open(sysctl_file_path, "r");
 	while sysctl_file:read(0) do
 		local sysctl_line = sysctl_file:read();
-		if not string.find(sysctl_line, ".rp_filter") then sysctl_options = sysctl_options .. sysctl_line .. "\n" end 
+		if not string.find(sysctl_line, ".rp_filter") then sysctl_options = sysctl_options .. sysctl_line .. "\n" end
 	end
 	sysctl_file:close()
-	
 	sysctl_options = sysctl_options .. "net.ipv4.conf.default.rp_filter=2\nnet.ipv4.conf.all.rp_filter=2\n";
 	sysctl_file = io.open(sysctl_file_path, "w");
-	sysctl_file:write(sysctl_options);
-	sysctl_file:close();
+	if sysctl_file ~= nil then
+		sysctl_file:write(sysctl_options);
+		sysctl_file:close();
+	end
 end
 
 function network.setup_dns()
 	local cloudDomain = config.get("system", "domain")
 	local resolvers = config.get("network", "resolvers")
 
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 	uci:foreach("dhcp", "dnsmasq",
 		function(s)
 			uci:set("dhcp", s[".name"], "domain", cloudDomain)
@@ -140,7 +140,7 @@ end
 function network.clean()
 	print("Clearing network config...")
 
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 
 	uci:delete("network", "globals", "ula_prefix")
 	uci:set("network", "wan", "proto", "none")
@@ -219,7 +219,7 @@ function network.scandevices()
 	end
 
 	--! Scrape from uci wireless
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 	uci:foreach("wireless", "wifi-iface", owrt_ifname_parser)
 
 	--! Scrape from uci network
@@ -299,7 +299,7 @@ end
 function network.createStaticIface(linuxBaseIfname, openwrtNameSuffix, ipAddr, gwAddr)
 	local openwrtNameSuffix = openwrtNameSuffix or ""
 	local owrtInterfaceName = network.sanitizeIfaceName(linuxBaseIfname) .. openwrtNameSuffix
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 
 	uci:set("network", owrtInterfaceName, "interface")
 	uci:set("network", owrtInterfaceName, "proto", "static")
@@ -339,7 +339,7 @@ function network.createVlanIface(linuxBaseIfname, vid, openwrtNameSuffix, vlanPr
 	local owrtDeviceName = owrtInterfaceName
 	local linux802adIfName = linuxBaseIfname
 
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 
 	if vid ~= 0 then
 		local vlanId = tostring(vid)
@@ -401,7 +401,7 @@ function network.createMacvlanIface(baseIfname, linuxName, argsDev, argsIf)
 	owrtDeviceName = owrtDeviceName:gsub("[^%w_]", "_") -- sanitize uci section name
 	owrtInterfaceName = owrtInterfaceName:gsub("[^%w_]", "_") -- sanitize uci section name
 
-	local uci = libuci:cursor()
+	local uci = config.get_uci_cursor()
 
 	uci:set("network", owrtDeviceName, "device")
 	uci:set("network", owrtDeviceName, "type", "macvlan")
