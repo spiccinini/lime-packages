@@ -114,6 +114,12 @@ As one of the goals is that it must be easy for developers to write, modify and 
 * testing shell environment -> `tools/dockertestshell`
 * running the tests -> `./run_tests` script
 
+## Debugging
+
+Step by step debugging can be perfomed using ZeroBrane Studio IDE following this guide: https://studio.zerobrane.com/doc-remote-debugging
+All the dependencies are already installed in the docker testing image.
+
+
 ### Testing shell environment
 
 To provide an easy way to develop or test things within the docker image there is a tool that opens a bash shell inside the docker image that has some features that allows easy development:
