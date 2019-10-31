@@ -26,7 +26,7 @@ end
 
 -- Share your own default configuration
 function fbw.share_defualts()
-    utils.execute('ln -s /etc/config/lime-defaults /www/lime-defaults')
+    utils.execute('ln -s /etc/config/lime-network /www/lime-defaults')
 end
 
 -- Write lock file at begin
@@ -38,7 +38,7 @@ end
 
 -- Remove old results
 function fbw.clean_tmp()
-    utils.execute('rm /tmp/lime-defaults__*')
+    utils.execute('rm /tmp/lime-network__*')
 end
 
 -- Save working copy of wireless
@@ -79,9 +79,9 @@ function fbw.get_own_macs()
     return ft.map(function(phy) return table.concat(wireless.get_phy_mac(phy),":") end, phys)
 end
 
--- Calc link local address and download lime-default
+-- Calc link local address and download lime-network
 function fbw.get_config(results, mesh_network)
-    fbw.log('Calc link local address and download lime-default - '.. json.stringify(mesh_network))
+    fbw.log('Calc link local address and download lime-network - '.. json.stringify(mesh_network))
     local mode = mesh_network.mode == "Mesh Point" and 'mesh' or 'adhoc'
     local dev_id = 'wlan'..mesh_network['phy_idx']..'-'..mode
     local stations = {}
@@ -158,8 +158,8 @@ function fbw.fetch_config(data)
     if (hostname == '') then hostname = host end
     local signal = data.signal
     local ssid = data.ssid
-    local filename = "/tmp/lime-defaults__host__"..hostname
-    utils.execute("/bin/wget http://["..data.host.."]/lime-defaults -O "..filename)
+    local filename = "/tmp/lime-network__host__"..hostname
+    utils.execute("/bin/wget http://["..data.host.."]/lime-defaults -O "..filename) XX
     return { host = host, filename = filename, success = utils.file_exists(filename) }
 end
 
@@ -175,19 +175,6 @@ function fbw.restore_wifi_config()
     end
 end
 
--- Reset lime config file
-function fbw.clean_lime_config()
-    utils.execute("rm /etc/config/lime")
-    local f = io.open("/etc/config/lime", "w")
-    local command = [[
-        config lime system
-        config lime network
-        config lime wifi
-    ]]
-    local s = f:write(command)
-    f:close()
-end
-
 -- Apply configuraation permanenty
 -- TODO: check if config is valid
 -- TODO: use safe-reboot
@@ -197,14 +184,13 @@ function fbw.apply_file_config(file, hostname)
     local filePath = "/tmp/"..file
     utils.file_exists(filePath)
     -- Format hostname
-    hostname = hostname or uci_cursor:get("lime", "system", "hostname")
+    hostname = hostname or config.get("system", "hostname")
     -- Clean previus lime configuration and replace lime-defaults
-    fbw.clean_lime_config()
-    utils.execute("cp "..filePath.." /etc/config/lime-defaults")
+	config.reset_node_config()
+    utils.execute("cp "..filePath.." /etc/config/" .. config.UCI_NETWORK_NAME)
     -- Run lime-config as first boot and  setup new hostname
-    utils.execute("/rom/etc/uci-defaults/91_lime-config")
-    uci_cursor:set("lime", "system","hostname", hostname)
-    uci_cursor:commit("lime")
+    uci_cursor:set(config.UCI_NODE_NAME, "system", "hostname", hostname)
+    uci_cursor:commit(config.UCI_NODE_NAME)
     -- Remove FBW lock file
     fbw.remove_lock_file()
     -- Apply new configuration
@@ -259,7 +245,7 @@ function fbw.read_configs()
     local tempFiles = fs.dir("/tmp/")
     local result = {}
     for file in tempFiles do
-        if (file ~= nil and file:sub(1, 12) == "lime-default") then
+        if (file ~= nil and file:sub(1, 12) == config.UCI_NETWORK_NAME) then
             local config = getConfig(file)
             table.insert(result, {
                 config = config,
@@ -284,8 +270,8 @@ function fbw.apply_user_configs(configs, hostname)
     uci_cursor:set("lime-defaults", 'wifi', 'ieee80211s_mesh_id', 'LiMe')
     uci_cursor:commit("lime-defaults")
     -- Apply new configuration and setup hostname
-    fbw.clean_lime_config()
-    utils.execute("/rom/etc/uci-defaults/91_lime-config")
+    config.reset_node_config()
+
     uci_cursor:set("lime", 'system', 'hostname', hostname)
     uci_cursor:commit('lime')
     -- Apply new configuration

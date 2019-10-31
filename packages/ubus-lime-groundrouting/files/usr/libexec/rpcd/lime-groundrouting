@@ -44,7 +44,7 @@ local function get_config()
     function add_to_result(section)
         table.insert(result.config, section)
     end
-    config.node_foreach("hwd_gr", add_to_result)
+    config.foreach("hwd_gr", add_to_result)
     result.board = readFile('/etc/board.json') or '{}'
     result.board = json.decode(result.board)
     result.devices = network.scandevices()
@@ -55,7 +55,7 @@ local function set_config(msg)
     local configuration = msg.config
     local net_dev = configuration.net_dev
     local uci = libuci:cursor()
-    uci:delete("lime","link1")
+    uci:delete("lime","link1") -- TODO
     config.init_batch()
 
     if configuration.delete ~= true then    
