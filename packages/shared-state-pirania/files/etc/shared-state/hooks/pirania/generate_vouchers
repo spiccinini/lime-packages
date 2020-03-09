@@ -23,7 +23,7 @@ local uci_conf = uci.cursor()
 
 local inputTable = JSON.parse(io.stdin:read("*all"))
 local dbPath = uci_conf:get("pirania", "base_config", "db_path")
-local outputTable ={"key,voucher,expiretime,uploadlimit,downloadlimit,amountofmacsallowed,usedmacs,"}
+local tmpDbPath = "/tmp/pirania.csv"
 
 local function shell(command)
     local handle = io.popen(command)
@@ -40,12 +40,28 @@ end
 local function reduce(cb, tab, default)
     local result = default
     for k, act in pairs(tab) do
-        result = cb(result,act) 
+        result = cb(result,act)
     end
     return result
 end
 
-local initialHash = shell('md5sum '..dbPath..' | cut -d \' \' -f 1'):gsub("\n","")
+local function write_vouchers_as_json(data, path)
+    local outputTable ={"key,voucher,expiretime,uploadlimit,downloadlimit,amountofmacsallowed,usedmacs,"}
+
+    -- Generate db lines
+    for key,vo in pairs(data) do
+        table.insert(outputTable, vo.name..','..vo.voucher..','..vo.expires..',10,10,'..vo.macsAllowed..','..macs2string(vo.macs))
+    end
+
+    -- Write result and calc new md5hash
+    io.output(path):write(table.concat(outputTable, '\n').."\n")
+end
+
+local function get_db_hash(path)
+    return shell('md5sum '..path..' | cut -d \' \' -f 1'):gsub("\n","")
+end
+
+local initialHash = get_db_hash(dbPath)
 local sortedTable = {}
 
 -- Get vouchers data
@@ -69,18 +85,13 @@ local result = reduce(function(prev, act)
     end
     return prev
 end , sortedTable, {})
-    
--- Generate db lines
-for key,vo in pairs(result) do
-    table.insert(outputTable, vo.name..','..vo.voucher..','..vo.expires..',10,10,'..vo.macsAllowed..','..macs2string(vo.macs))
-end
 
+write_vouchers_as_json(result, tmpDbPath)
 
--- Write result and calc new md5hash
-io.output(dbPath):write(table.concat(outputTable, '\n').."\n")
-local finalHash = shell('md5sum '..dbPath..' | cut -d \' \' -f 1')
+local finalHash = get_db_hash(tmpDbPath)
 
 -- If db change trigger captive-portal and setup the new state
 if initialHash ~= finalHash then
+    shell("cp " .. tmpDbPath .. " " .. dbPath)
     shell('captive-portal update')
 end
