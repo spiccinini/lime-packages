@@ -3,6 +3,7 @@ local test_utils = require 'tests.utils'
 local defreboot = require 'deferable_reboot'
 
 local uci = nil
+config.log = function() end
 
 describe('Deferable Reboot tests #defreboot', function()
 
