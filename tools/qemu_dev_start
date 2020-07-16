@@ -201,7 +201,7 @@ fi
 
 # build the cdpio. Don't know how to do it without changing the directory
 cd /tmp/lime_rootfs
-find . -depth | cpio --quiet -o -H newc  > /tmp/lime_rootfs.cpio
+find . | cpio --quiet -o -H newc  > /tmp/lime_rootfs.cpio
 cd - > /dev/null
 
 MONITOR_PORT=$_arg_monitor_port
