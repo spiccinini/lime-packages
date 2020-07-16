@@ -241,12 +241,9 @@ exec qemu-system-x86_64 "${qemu_args[@]}"
 # cleanup
 ip tuntap del name lime_tap0 mode tap
 
-if [ "$_arg_enable-wan" == "on" ]; then
-
+if [ "$_arg_enable_wan" == "on" ]; then
     ip tuntap del name lime_tap1 mode tap
-
     # End dnsmasaq
     kill -TERM `cat /var/run/dnsmasq.pid`
-
 fi
 # ] <-- needed because of Argbash
