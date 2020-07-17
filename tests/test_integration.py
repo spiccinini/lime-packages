@@ -107,6 +107,11 @@ def wait_until_css_selector(selector):
 def wait_until_xpath_selector(selector):
     return WebDriverWait(browser, 10).until(lambda x: browser.find_element_by_xpath(selector))
 
+def close_fbw_splash(browser):
+    fbw_btn_cancel = browser.find_elements_by_tag_name("button")[1]
+    assert fbw_btn_cancel.text == 'CANCEL'
+    fbw_btn_cancel.click()
+
 def test_lime_app_map():
     browser.get(f"http://{NODE_IP}")
     # Wait for the app to load
@@ -154,12 +159,11 @@ def test_lime_app_network_administration():
     # Wait for the app to load
     WebDriverWait(browser, 10).until(EC.title_is("LiMe"))
     disable_css_transitions(browser)
-    wait_until_xpath_selector('//button[text()=cancel]')
+
+    wait_until_xpath_selector('//button[text()="Cancel"]')
 
     # Close the FirstBootWizard splash
-    fbw_btn_cancel = browser.find_elements_by_tag_name("button")[1]
-    assert fbw_btn_cancel.text == 'CANCEL'
-    fbw_btn_cancel.click()
+    close_fbw_splash(browser)
 
     # Open the menu
     menu = browser.find_element_by_tag_name("nav")
@@ -178,8 +182,8 @@ def test_lime_app_network_administration():
     password_input.send_keys("anypassword")  # this asumes starting without password
     login_btn = browser.find_element_by_css_selector("button")
     assert login_btn.text == "LOGIN"
-
     login_btn.click()
+
     # This lead us to the network configuration
 
     # wait for the login to complete
@@ -189,7 +193,7 @@ def test_lime_app_network_administration():
     re_enter_password = browser.find_element_by_css_selector(
         "input[placeholder='Re-enter Password']")
 
-    change_btn = browser.find_element_by_xpath("//div[@class='container']/*/button")
+    change_btn = browser.find_element_by_xpath("//button[text()='Change']")
     assert not change_btn.is_enabled()
 
     password_input.send_keys("123")
@@ -198,11 +202,13 @@ def test_lime_app_network_administration():
     re_enter_password.send_keys("123")
     assert not change_btn.is_enabled()
 
-    password_input.send_keys("a123456789")
+    password_input.clear()
+    password_input.send_keys("this is a g00d passw0rd")
     assert not change_btn.is_enabled()
 
-    re_enter_password.send_keys("a123456789")
-    change_btn.is_enabled()
+    re_enter_password.clear()
+    re_enter_password.send_keys("this is a g00d passw0rd")
+    assert change_btn.is_enabled()
     change_btn.click()
 
     WebDriverWait(browser, 10).until(lambda x: 'Shared Password changed successfully' in
@@ -212,23 +218,30 @@ def test_lime_app_network_administration():
     navigate_to_section(browser, "Status")
     navigate_to_section(browser, "Network Configuration")
 
-    password_input = browser.find_element_by_css_selector("input[name='password']")
+    # now it should not prompt for the password as we are already logged in this session
+    assert "Change Shared Password" in browser.find_element_by_class_name("container").text
 
-    password_input.send_keys("not the password 123")
+    # reload the app to check that now the password is required
+    browser.refresh()
+    wait_until_xpath_selector('//button[text()="Cancel"]')
+    close_fbw_splash(browser)
+
+    # test an incorrect password
+    password_input = browser.find_element_by_css_selector("input[name='password']")
+    password_input.send_keys("incorrectpassword")  # this asumes starting without password
     login_btn = browser.find_element_by_css_selector("button")
     login_btn.click()
-    assert "Wrong password, try again" not in browser.find_element_by_class_name("container").text
-    
+    assert "Wrong password, try again" in browser.find_element_by_class_name("container").text
+
+    # now with the real password
     password_input.clear()
-    password_input.send_keys("a123456789")
+    password_input.send_keys("this is a g00d passw0rd")
     login_btn.click()
-    WebDriverWait(browser, 10).until(lambda x: 'Change Shared Password' in
-                                              browser.find_element_by_class_name("container").text)
+    assert "Change Shared Password" in browser.find_element_by_class_name("container").text
 
 
-
-rootfs = "/home/gf/Downloads/librerouteros-v1.2-x86-64-generic-rootfs.tar.gz"
-ramfs = "/home/gf/Downloads/librerouteros-v1.2-x86-64-ramfs.bzImage"
+rootfs = "/home/san/Downloads/openwrt/bin/targets/x86/64/openwrt-x86-64-generic-rootfs.tar.gz"
+ramfs = "/home/san/Downloads/openwrt/bin/targets/x86/64/openwrt-x86-64-ramfs.bzImage"
 start_args = f"--libremesh-workdir . {rootfs} {ramfs}"
 qemu = QemuHandler(start_args=start_args)
 qemu.start()
@@ -238,7 +251,7 @@ console.expect("GNU/Linux")
 
 browser = WebdriverHandler.start()
 
-# test_lime_app_network_administration()
+test_lime_app_network_administration()
 test_lime_app_map()
 
 WebdriverHandler.stop()
