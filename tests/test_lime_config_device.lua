@@ -9,34 +9,37 @@ local test_utils = require 'tests.utils'
 -- disable logging in config module
 config.log = function() end
 
-local uci
+local uci, snapshot
 
 local librerouter_board = test_utils.get_board('librerouter-v1')
 
-describe('LiMe Config tests', function()
-    it('test lime-config for a LibreRouter device #librerouter', function()
-		local defaults = io.open('./packages/lime-system/files/etc/config/lime-defaults'):read("*all")
-		test_utils.write_uci_file(uci, config.UCI_DEFAULTS_NAME, defaults)
+local function setup_device()
+        local defaults = io.open('./packages/lime-system/files/etc/config/lime-defaults'):read("*all")
+        test_utils.write_uci_file(uci, config.UCI_DEFAULTS_NAME, defaults)
 
-		stub(wireless, "get_phy_mac", utils.get_id)
+        stub(wireless, "get_phy_mac", utils.get_id)
         stub(network, "get_mac", utils.get_id)
         stub(network, "assert_interface_exists", function () return true end)
 
         -- copy openwrt first boot generated configs
-		for _, config_name in ipairs({'network', 'wireless'}) do
-			local fin = io.open('tests/devices/librerouter-v1/uci_config_' .. config_name, 'r')
-			local fout = io.open(uci:get_confdir() .. '/' .. config_name, 'w')
-			fout:write(fin:read('*a'))
-			fin:close()
-			fout:close()
-			uci:load(config_name)
-		end
+        for _, config_name in ipairs({'network', 'wireless'}) do
+            local from_file  = 'tests/devices/librerouter-v1/uci_config_' .. config_name
+            local to_file = uci:get_confdir() .. '/' .. config_name
+            utils.write_file(to_file, utils.read_file(from_file))
+            uci:load(config_name)
+        end
 
         local iwinfo = require 'iwinfo'
-		iwinfo.fake.load_from_uci(uci)
+        iwinfo.fake.load_from_uci(uci)
 
         stub(utils, "getBoardAsTable", function () return librerouter_board end)
         table.insert(hw_detection.search_paths, 'packages/*hwd*/files/usr/lib/lua/lime/hwd/*.lua')
+end
+
+
+describe('LiMe Config tests #deviceconfig', function()
+    it('test lime-config for a LibreRouter device #librerouter', function()
+        setup_device()
 
         config.main()
 
@@ -73,6 +76,30 @@ describe('LiMe Config tests', function()
 		assert.is.equal('1000', uci:get('wireless', 'radio2', 'distance'))
     end)
 
+    it('test lime-config for a LibreRouter device', function()
+
+        local lime_node = [[
+        config net 'eth0_static'
+            option linux_name 'eth0.1' # the WAN ifc of the librerouer
+            list protocols 'static'
+            option static_ipv4 '10.62.99.99/16'
+            option static_gateway_ipv4 '10.62.0.2'
+        ]]
+        test_utils.write_uci_file(uci, config.UCI_NODE_NAME, lime_node)
+
+        setup_device()
+
+        config.main()
+        uci:commit("network")
+
+        assert.is.equal('static', uci:get('network', 'lm_net_eth0_1_static', 'proto'))
+        assert.is.equal('1', uci:get('network', 'lm_net_eth0_1_static', 'auto'))
+        assert.is.equal('eth0.1', uci:get('network', 'lm_net_eth0_1_static', 'ifname'))
+        assert.is.equal('10.62.99.99', uci:get('network', 'lm_net_eth0_1_static', 'ipaddr'))
+        assert.is.equal('255.255.0.0', uci:get('network', 'lm_net_eth0_1_static', 'netmask'))
+        assert.is.equal('10.62.0.2', uci:get('network', 'lm_net_eth0_1_static', 'gateway'))
+    end)
+
 	setup('', function()
 		-- fake an empty hooksDir
         config.hooksDir = io.popen("mktemp -d"):read('*l')
@@ -83,10 +110,12 @@ describe('LiMe Config tests', function()
 	end)
 
     before_each('', function()
+        snapshot = assert:snapshot()
         uci = test_utils.setup_test_uci()
     end)
 
     after_each('', function()
+        snapshot:revert()
         test_utils.teardown_test_uci(uci)
     end)
 end)
